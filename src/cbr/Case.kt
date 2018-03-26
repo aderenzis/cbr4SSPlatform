@@ -10,7 +10,7 @@ data class Case(val problem: Interface, var solution: String = "") {
 
 fun main(args: Array<String>) {
     println("Creating Case")
-    val currencyType = SimpleType("string")
+    val currencyType = SimpleType(SimpleType.STRING)
     val currencyParameter = Parameter("currency", currencyType)
     val fromCurrency = Input("fromCurrency", ArrayList(listOf(currencyParameter)))
     val toCurrency = Output("toCurrency", ArrayList(listOf(currencyParameter)))
