@@ -1,6 +1,5 @@
 package compatibilityUtils;
 
-import edu.giisco.SoaML.*;
 import edu.giisco.SoaML.metamodel.*;
 
 
@@ -35,7 +34,6 @@ public class InterfacesCompatibilityChecker implements Runnable {
 	protected String classPathOriginal;
 	protected String classPathCandidate;
 	protected int cantidadWrappers;
-	protected Arbol t; // @jve:decl-index=0:
 
 	public double adaptabilityGap = 0;
 
