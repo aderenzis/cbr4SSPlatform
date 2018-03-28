@@ -45,7 +45,7 @@ fun main(args: Array<String>) {
     caseCollection.drop()
     caseCollection.insertOne(case1)
     println("Insert succefull now there are ${caseCollection.count()} Cases in the KB")
-//    val caseRetrieved = caseCollection.findOne()
-    println("Retrieved Case from db: \n $case1")
+    val caseRetrieved = caseCollection.findOne()
+    println("Retrieved Case from db: \n $caseRetrieved")
 
 }
