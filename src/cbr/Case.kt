@@ -21,8 +21,21 @@ fun main(args: Array<String>) {
     println("Creating Case")
     val currencyType = SimpleType(SimpleType.STRING)
     val currencyParameter = Parameter("currency", currencyType)
-    val fromCurrency = Input("fromCurrency", ArrayList(listOf(currencyParameter)))
-    val toCurrency = Output("toCurrency", ArrayList(listOf(currencyParameter)))
+
+    val arrayCurrencyType = ArrayType(currencyType)
+    // Sin nombre falla
+    arrayCurrencyType.name = "listofcriptos"
+    val currencyArrayParameter = Parameter("listOfCurrencies", arrayCurrencyType)
+
+    val currencyFromAtribute = Attribute("from", currencyType)
+    val currencyToAtribute = Attribute("to", currencyType)
+    val toFromCurrency = ComplexType("toFromCurrency", ArrayList(listOf(currencyFromAtribute, currencyToAtribute)))
+    val currencyComplexParameter = Parameter("toFromCurrency", toFromCurrency)
+
+    val listOfParameters = listOf(currencyParameter, currencyArrayParameter, currencyComplexParameter)
+    val fromCurrency = Input("fromCurrency", ArrayList(listOfParameters))
+    val toCurrency = Output("toCurrency", ArrayList(listOfParameters))
+
     val currencyFaults = ArrayList<Fault>()
     val currencyResponse = Response("currencyResponse", currencyType)
     val convertCurrency = Operation("convertCurrency", fromCurrency, toCurrency, currencyFaults, currencyResponse)
