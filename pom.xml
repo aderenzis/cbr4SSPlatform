@@ -38,6 +38,13 @@
           <scope>system</scope>
           <systemPath>${project.basedir}/lib/webServiceMetamodel.jar</systemPath>
       </dependency>
+      <dependency>
+          <groupId>com.sample</groupId>
+          <artifactId>wsdlToWSMetamodel</artifactId>
+          <version>1.0</version>
+          <scope>system</scope>
+          <systemPath>${project.basedir}/lib/wsdlToWSMetamodel.jar</systemPath>
+      </dependency>
       <!-- https://mvnrepository.com/artifact/edu.mit/jwi -->
       <dependency>
           <groupId>edu.mit</groupId>
