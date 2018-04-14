@@ -25,7 +25,7 @@ fun getSampleCases(path: String): MutableList<Case> {
     val cases = mutableListOf<Case>()
     File(path).walk().filter { it.extension == "wsdl2" }.forEach {
         val soaMLInterface = WsdlToSoaML.createSoaMLInterface(it.absolutePath)
-        val case = Case(soaMLInterface)
+        val case = Case(soaMLInterface, soaMLInterface.name)
         cases.add(case)
     }
     return cases
@@ -46,6 +46,18 @@ fun findSimilarity(referenceCase: Case, k: Int): List<Case> {
     return casesByDistance.sortedWith(compareBy({ it.first })).slice(0 until top).map { it.second }
 }
 
+fun findSolution(referenceCase: Case): String {
+    /**
+     * Find the solution to [referenceCase]
+     * In order to do it, it perform a knn search and return the most common solution.
+     * @return the proper solution
+     */
+    val similarCases = findSimilarity(referenceCase, 10)
+//    similarCases[1].solution = similarCases[0].solution
+    return similarCases.groupBy { it.solution }.toList()
+        .sortedWith(compareByDescending({ it.second.size })).first().first
+}
+
 fun main(args: Array<String>) {
     val path = "/home/rapkyt/Project/Tesis/Resources/Experiments/dataset/WsdlDataset/originales"
     val cases = getSampleCases(path)
@@ -55,9 +67,9 @@ fun main(args: Array<String>) {
     println("Insert succefull now there are ${caseCollection.count()} Cases in the KB")
     val currencyCase = createExampleCase()
     val example = caseCollection.findOne() ?: currencyCase
-    val kCases = findSimilarity(example, 10)
-    println("\nThe similar cases are:")
-    println(kCases)
+    val solution = findSolution(example)
+    println("\nThe similar case is:")
+    println(solution)
 
 }
 
