@@ -31,14 +31,19 @@ fun getSampleCases(path: String): MutableList<Case> {
     return cases
 }
 
+fun findSimilarity(referenceCase: Case, k: Int): List<Case> {
+    val casesByDistance = mutableListOf<Pair<Double, Case>>()
+    val caseCollection = getCaseCollection()
+    caseCollection.find().forEachIndexed { index, anotherCase ->
+        // TODO: Porque no se puede calcular la distancia con mas casos?
+        if (index < 26) {
+            val distance = referenceCase.getDistance(anotherCase)
+            casesByDistance.add(Pair(distance, anotherCase))
+        }
 
-fun getCaseCollection(): MongoCollection<Case> {
-    println("Connecting to Mongo")
-    val client = KMongo.createClient("172.17.0.2")
-    val database = client.getDatabase("test")
-    val caseCollection = database.getCollection<Case>()
-    println("Connection with Mongo established.")
-    return caseCollection
+    }
+    val top = minOf(k, casesByDistance.size)
+    return casesByDistance.sortedWith(compareBy({ it.first })).slice(0 until top).map { it.second }
 }
 
 fun main(args: Array<String>) {
@@ -48,9 +53,15 @@ fun main(args: Array<String>) {
     caseCollection.drop()
     caseCollection.insertMany(cases)
     println("Insert succefull now there are ${caseCollection.count()} Cases in the KB")
+    val currencyCase = createExampleCase()
+    val example = caseCollection.findOne() ?: currencyCase
+    val kCases = findSimilarity(example, 10)
+    println("\nThe similar cases are:")
+    println(kCases)
+
 }
 
-fun createExampleCase() {
+fun createExampleCase(): Case {
     println("Creating Case")
     val currencyType = SimpleType(SimpleType.STRING)
     val currencyParameter = Parameter("currency", currencyType)
@@ -81,14 +92,24 @@ fun createExampleCase() {
     val case2 = Case(currencyConvertor2)
     println("Case created")
 
-    val distance = case1.getDistance(case2)
-    println("Distance: $distance")
-    val distance2 = case2.getDistance(case1)
-    println("Distance2: $distance2")
-    val caseCollection = getCaseCollection()
-    caseCollection.drop()
-    caseCollection.insertOne(case1)
-    println("Insert succefull now there are ${caseCollection.count()} Cases in the KB")
-    val caseRetrieved = caseCollection.findOne("{'problem.name':'CurrencyConvertor'}")
-    println("Retrieved Case from db: \n $caseRetrieved")
+//    val distance = case1.getDistance(case2)
+//    println("Distance: $distance")
+//    val distance2 = case2.getDistance(case1)
+//    println("Distance2: $distance2")
+//    val caseCollection = getCaseCollection()
+//    caseCollection.drop()
+//    caseCollection.insertOne(case1)
+//    println("Insert succefull now there are ${caseCollection.count()} Cases in the KB")
+//    val caseRetrieved = caseCollection.findOne("{'problem.name':'CurrencyConvertor'}")
+//    println("Retrieved Case from db: \n $caseRetrieved")
+    return case1
+}
+
+fun getCaseCollection(): MongoCollection<Case> {
+    println("Connecting to Mongo")
+    val client = KMongo.createClient("172.17.0.2")
+    val database = client.getDatabase("test")
+    val caseCollection = database.getCollection<Case>()
+    println("Connection with Mongo established.")
+    return caseCollection
 }

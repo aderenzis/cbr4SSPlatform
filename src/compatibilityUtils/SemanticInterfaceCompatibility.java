@@ -552,6 +552,7 @@ public class SemanticInterfaceCompatibility {
 				////////////System.out.println(vStopWords);
 				v1.removeAll(vStopWords);
 				v2.removeAll(vStopWords);
+				entrada.close();
 
 			}
 			
