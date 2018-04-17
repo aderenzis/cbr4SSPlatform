@@ -8,16 +8,16 @@ import edu.uncoma.fai.WsdlToSoaML.parser.WsdlToSoaML
 import org.litote.kmongo.*
 import java.io.File
 
+val checker = InterfacesCompatibilityChecker()
 
 data class Case(val problem: Interface, var solution: String = "") {
     val solutionIsDefined get() = solution != ""
 
     fun getDistance(anotherCase: Case): Double {
-        val checker = InterfacesCompatibilityChecker()
         checker.serviceInterface = anotherCase.problem
         checker.requiredInterface = problem
         checker.run()
-        return checker.adaptabilityGap
+        return checker.getAdaptabilityGap()
     }
 }
 
@@ -34,13 +34,12 @@ fun getSampleCases(path: String): MutableList<Case> {
 fun findSimilarity(referenceCase: Case, k: Int): List<Case> {
     val casesByDistance = mutableListOf<Pair<Double, Case>>()
     val caseCollection = getCaseCollection()
-    caseCollection.find().forEachIndexed { index, anotherCase ->
-        // TODO: Porque no se puede calcular la distancia con mas casos?
-        if (index < 26) {
-            val distance = referenceCase.getDistance(anotherCase)
-            casesByDistance.add(Pair(distance, anotherCase))
-        }
-
+    caseCollection.find()
+        // Saco el caso problematico (consume mucha ram y procesamiento
+        .filter("{'problem.name':{${MongoOperator.ne}: 'basichoroscopeandnumerology.wsdl2'}}")
+        .forEach {
+            val distance = referenceCase.getDistance(it)
+            casesByDistance.add(Pair(distance, it))
     }
     val top = minOf(k, casesByDistance.size)
     return casesByDistance.sortedWith(compareBy({ it.first })).slice(0 until top).map { it.second }
@@ -59,7 +58,8 @@ fun findSolution(referenceCase: Case): String {
 }
 
 fun main(args: Array<String>) {
-    val path = "/home/rapkyt/Project/Tesis/Resources/Experiments/dataset/WsdlDataset/originales"
+//    Pasar como argumento el path hacia los servicios
+    val path = args[0]
     val cases = getSampleCases(path)
     val caseCollection = getCaseCollection()
     caseCollection.drop()

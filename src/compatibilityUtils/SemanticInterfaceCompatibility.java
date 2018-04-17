@@ -32,9 +32,9 @@ public class SemanticInterfaceCompatibility {
 			private static double verbExact=0.0;
 			private static double PARAM_CASE_PENALIZATION = 0.0;
 			private static double ELEMENT_NUMBER_PENALIZATION = 0.0;
-				
-			
-			public static boolean areSynonyms(String word1, String word2) {
+	private static Vector<String> vStopWords;
+
+	public static boolean areSynonyms(String word1, String word2) {
 				Vector sinonimosWord1 = getSynonyms(word1);
 				if (sinonimosWord1.contains(word2) ) {
 					return true;
@@ -381,9 +381,11 @@ public class SemanticInterfaceCompatibility {
 				}
 				if (url == null) 
 					return null;
-				dictionary = new Dictionary(url);
+				if (dictionary == null)
+					dictionary = new Dictionary(url);
 				try {
-					dictionary.open();
+					if (!dictionary.isOpen())
+						dictionary.open();
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -542,17 +544,21 @@ public class SemanticInterfaceCompatibility {
 				//BufferedReader entrada = new BufferedReader(new FileReader("D:\\TESIS\\TesisDeRenzis\\EvSemServWeb\\src\\stoplist.txt"));
 				
 //				BufferedReader entrada = new BufferedReader(new FileReader(System.getenv("WNHOME")+"stoplist.txt"));
-				BufferedReader entrada = new BufferedReader(new FileReader(System.getenv("WNHOME")+File.separator+"stoplist.txt"));
-				String renglon;
-				Vector<String> vStopWords = new Vector();
-				while ((renglon = entrada.readLine()) != null) {
-					vStopWords.add(renglon);
+
+				if (vStopWords == null || vStopWords.size() == 0) {
+					vStopWords = new Vector();
+					BufferedReader entrada = new BufferedReader(new FileReader(System.getenv("WNHOME") + File.separator + "stoplist.txt"));
+					String renglon;
+					while ((renglon = entrada.readLine()) != null) {
+						vStopWords.add(renglon);
+					}
+					entrada.close();
 				}
+
 				////////////System.out.println("Cantidad de StopWords: "+vStopWords.size());
 				////////////System.out.println(vStopWords);
 				v1.removeAll(vStopWords);
 				v2.removeAll(vStopWords);
-				entrada.close();
 
 			}
 			
