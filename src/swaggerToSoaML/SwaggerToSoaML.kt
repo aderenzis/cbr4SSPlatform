@@ -6,6 +6,9 @@ import io.swagger.models.*
 import io.swagger.models.Operation
 import io.swagger.parser.SwaggerParser;
 import io.swagger.models.parameters.BodyParameter
+import io.swagger.models.parameters.HeaderParameter
+import io.swagger.models.parameters.PathParameter
+import io.swagger.models.parameters.QueryParameter
 import io.swagger.models.properties.ArrayProperty
 import io.swagger.models.properties.DoubleProperty
 import io.swagger.models.properties.Property
@@ -75,11 +78,12 @@ fun getSimpleType(type: String, format: String?, schema: ModelImpl?): Type {
                 doubleType
         }
         "string" -> stringType
+        // TODO: FIX OTHER TYPES
         "byte" -> byteType
         "boolean" -> booleanType
         "date" -> dateType
         "date-time" -> dateTimeType
-        "password" -> passwordType
+sta        "password" -> passwordType
         "object" -> {
             val attributes = mutableListOf<Attribute>()
             schema?.properties?.forEach { property ->
@@ -117,11 +121,16 @@ fun getComplexType(name: String, api: Swagger): ComplexType {
 fun getOperation(operation: Operation, api: Swagger): edu.giisco.SoaML.metamodel.Operation {
     val parameters = mutableListOf<Parameter>()
     operation.parameters.forEach { parameter ->
-        val type = when (parameter.`in`) {
-            "path", "query" -> stringType
-            else -> {
-                val schemaName = ((parameter as BodyParameter).schema as RefModel).simpleRef
+        val type = when(parameter){
+            is HeaderParameter -> getSimpleType(parameter.type, parameter.format, null)
+            is QueryParameter -> getSimpleType(parameter.type, parameter.format, null)
+            is PathParameter -> getSimpleType(parameter.type, parameter.format, null)
+            is BodyParameter -> {
+                val schemaName = (parameter.schema as RefModel).simpleRef
                 getComplexType(schemaName, api)
+            }
+            else -> {
+                stringType
             }
         }
         val apiParameter = Parameter(parameter.name, type)
@@ -188,9 +197,19 @@ fun main(args: Array<String>) {
     //    Pasar como argumento el path hacia los servicios
     val jsonPath = args[0]
     val interfaces = mutableListOf<Interface>()
-    File(jsonPath).walk().filter { it.extension == "json" }.forEach {
-        val swaggerInterface = getInterface(it.absolutePath)
-        interfaces.add(swaggerInterface)
+    var failed = 0
+    var index =0
+    File(jsonPath).walk().filter { it.extension == "json" }.forEach{ file ->
+        try{
+            index ++
+            println("${failed} de ${index} ${file.absolutePath}")
+            val swaggerInterface = getInterface(file.absolutePath)
+            interfaces.add(swaggerInterface)
+        }
+        catch(e:Exception){
+            failed ++
+
+        }
     }
-    println("Interfaces Created")
+    println("${failed} de ${index} Interfaces Created")
 }
