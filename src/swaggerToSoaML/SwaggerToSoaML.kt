@@ -1,20 +1,22 @@
 package swaggerToSoaML
 
 import edu.giisco.SoaML.metamodel.*
+import edu.giisco.SoaML.metamodel.Response
+import io.swagger.models.*
 import io.swagger.models.Operation
-import io.swagger.models.RefModel
 import io.swagger.parser.SwaggerParser;
-import io.swagger.models.Swagger;
 import io.swagger.models.parameters.BodyParameter
 import io.swagger.models.properties.ArrayProperty
+import io.swagger.models.properties.DoubleProperty
+import io.swagger.models.properties.Property
 import io.swagger.models.properties.RefProperty
+import java.io.File
 import java.util.ArrayList
 
 //
 //class SwaggerToSoaML {
 //}
 
-val METHODS = listOf<String>("get", "put", "post", "delete", "patch")
 val integerType = SimpleType(SimpleType.INTEGER)
 val longType = SimpleType(SimpleType.LONG)
 val floatType = SimpleType(SimpleType.FLOAT)
@@ -26,41 +28,88 @@ val dateType = SimpleType(SimpleType.DATE)
 val dateTimeType = SimpleType(SimpleType.DATE_TIME)
 val passwordType = SimpleType(SimpleType.STRING)
 
-fun getComplexType(name: String, api: Swagger): ComplexType {
-    val attributes = mutableListOf<Attribute>()
-    val schemaDef = api.definitions[name]!!
-    schemaDef.properties.forEach { property ->
-        val type = when (property.value.type) {
-            "integer" -> {
-                if (property.value.format == "int32")
-                    integerType
-                else
-                    longType
-            }
-            "number" -> {
-                if (property.value.format == "float")
-                    floatType
-                else
-                    doubleType
-            }
-            "string" -> stringType
-            "byte" -> byteType
-            "boolean" -> booleanType
-            "date" -> dateType
-            "date-time" -> dateTimeType
-            "password" -> passwordType
-            "array" ->{
-                stringType
-                // TODO Do arrayType
-            }
-            else -> {
-                val schemaName = (property.value as RefProperty).simpleRef
+fun getType(property: Property, api: Swagger): Type {
+    return when (property.type) {
+        "array" -> {
+            val arrayType = getType((property as io.swagger.models.properties.ArrayProperty).items, api)
+            ArrayType(arrayType)
+        }
+
+        "object" -> {
+            if (property is io.swagger.models.properties.ObjectProperty) {
+                val attributes = mutableListOf<Attribute>()
+                property.properties?.forEach { property ->
+                    val type = getType(property.value, api)
+                    val atribute = Attribute(property.key, type)
+                    attributes.add(atribute)
+                }
+                ComplexType(property.name, attributes as ArrayList<Attribute>?)
+            } else {
+                val schemaName =
+                    ((property as io.swagger.models.properties.MapProperty).additionalProperties as RefProperty).simpleRef
                 getComplexType(schemaName, api)
             }
         }
+        "ref" -> {
+            val schemaName = (property as RefProperty).simpleRef
+            getComplexType(schemaName, api)
+        }
+        else -> {
+            getSimpleType(property.type, property.format, null)
+        }
+    }
+}
+
+fun getSimpleType(type: String, format: String?, schema: ModelImpl?): Type {
+    return when (type) {
+        "integer" -> {
+            if (format == "int32")
+                integerType
+            else
+                longType
+        }
+        "number" -> {
+            if (format == "float")
+                floatType
+            else
+                doubleType
+        }
+        "string" -> stringType
+        "byte" -> byteType
+        "boolean" -> booleanType
+        "date" -> dateType
+        "date-time" -> dateTimeType
+        "password" -> passwordType
+        "object" -> {
+            val attributes = mutableListOf<Attribute>()
+            schema?.properties?.forEach { property ->
+                val type = getSimpleType(property.value.type, property.value.format, schema)
+                val atribute = Attribute(property.key, type)
+                attributes.add(atribute)
+            }
+            ComplexType(schema?.name, attributes as ArrayList<Attribute>?)
+        }
+        else -> {
+            throw IllegalArgumentException("Simple Type not found")
+        }
+    }
+}
+
+
+fun getComplexType(name: String, api: Swagger): ComplexType {
+    val attributes = mutableListOf<Attribute>()
+    val schemaDef = api.definitions[name]!!
+    schemaDef.properties?.forEach { property ->
+        val type = getType(property.value, api)
         val atribute = Attribute(property.key, type)
         attributes.add(atribute)
     }
+    if (schemaDef is ModelImpl && schemaDef.additionalProperties != null) {
+        val type = getType(schemaDef.additionalProperties, api)
+        val atribute = Attribute(schemaDef.additionalProperties.title, type)
+        attributes.add(atribute)
+    }
+
     return ComplexType(name, attributes as ArrayList<Attribute>?)
 }
 
@@ -84,20 +133,32 @@ fun getOperation(operation: Operation, api: Swagger): edu.giisco.SoaML.metamodel
     val faults = mutableListOf<Fault>()
     operation.responses.forEach { response ->
         val responseSchema = response.value.responseSchema
-        val type = when(responseSchema) {
+        val type: Type? = when (responseSchema) {
             is RefModel -> {
                 val schemaName = responseSchema.simpleRef
                 getComplexType(schemaName, api)
             }
+            is ArrayModel -> {
+                val arrayType = getType(responseSchema.items, api)
+                ArrayType(arrayType)
+            }
+            is ModelImpl -> {
+                getSimpleType(responseSchema.type, responseSchema.format, responseSchema)
+            }
+            null -> null
             else -> {
-                stringType
+                // response sin schema?
+                throw IllegalArgumentException("Response Type not found")
             }
         }
         if (response.key.startsWith("2")) {
             parameters.clear()
-            val apiParameter = Parameter(response.key, type)
-            output = Output("response", ArrayList(listOf(apiParameter)))
-            apiResponse = Response("respoonse", type)
+            if (type != null) {
+                val apiParameter = Parameter(response.key, type)
+                parameters.add(apiParameter)
+            }
+            output = Output("response", parameters)
+            apiResponse = Response("response", type)
         } else {
             val fault = Fault(response.key, type)
             faults.add(fault)
@@ -108,9 +169,8 @@ fun getOperation(operation: Operation, api: Swagger): edu.giisco.SoaML.metamodel
     return soaMLOperation
 }
 
-fun main(args: Array<String>) {
-    val swagger =
-        SwaggerParser().read("/home/rapkyt/Project/Tesis/Resources/Experiments/dataset/SwaggerDataset/money-transfer-api (copia).json")
+fun getInterface(jsonPath: String): Interface {
+    val swagger = SwaggerParser().read(jsonPath)
     val operations = mutableListOf<edu.giisco.SoaML.metamodel.Operation>()
     swagger.paths.forEach { path ->
         val pathValues =
@@ -121,5 +181,16 @@ fun main(args: Array<String>) {
                 operations.add(operation)
         }
     }
-    val swaggerInterface= Interface("das", ArrayList(operations))
+    return Interface(swagger.info.title, ArrayList(operations))
+}
+
+fun main(args: Array<String>) {
+    //    Pasar como argumento el path hacia los servicios
+    val jsonPath = args[0]
+    val interfaces = mutableListOf<Interface>()
+    File(jsonPath).walk().filter { it.extension == "json" }.forEach {
+        val swaggerInterface = getInterface(it.absolutePath)
+        interfaces.add(swaggerInterface)
+    }
+    println("Interfaces Created")
 }
