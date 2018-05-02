@@ -210,7 +210,8 @@ fun main(args: Array<String>) {
     //    Pasar como argumento el path hacia los servicios
     val jsonPath = args[0]
     val interfaces = mutableListOf<Interface>()
-    var failed = mutableListOf<Exception>()
+    var failed = mutableSetOf<String>()
+    var failedCount = 0
     var index = 0
     File(jsonPath).walk().filter { it.extension == "json" }.forEach { file ->
         try {
@@ -220,10 +221,14 @@ fun main(args: Array<String>) {
             val swaggerInterface = swaggerToSoaML.getInterface()
             interfaces.add(swaggerInterface)
         } catch (e: Exception) {
-            failed.add(e)
+            var message = e.toString()
+            if ("java.lang.IllegalArgumentException: Cyclic reference" in message)
+                message = "java.lang.IllegalArgumentException: Cyclic reference"
+            failed.add(message)
+            failedCount++
             println(e)
         }
     }
-    println("${index - failed.size} of ${index} Interfaces Created")
+    println("${index - failedCount} of ${index} Interfaces Created, ${failedCount} failed")
     println(failed)
 }
