@@ -9,14 +9,11 @@ import io.swagger.models.parameters.BodyParameter
 import io.swagger.models.parameters.HeaderParameter
 import io.swagger.models.parameters.PathParameter
 import io.swagger.models.parameters.QueryParameter
-import io.swagger.models.properties.ArrayProperty
-import io.swagger.models.properties.DoubleProperty
-import io.swagger.models.properties.Property
-import io.swagger.models.properties.RefProperty
+import io.swagger.models.properties.*
 import java.io.File
 import java.util.ArrayList
 
-//
+
 class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
 
     val integerType = SimpleType(SimpleType.INTEGER)
@@ -24,24 +21,26 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
     val floatType = SimpleType(SimpleType.FLOAT)
     val doubleType = SimpleType(SimpleType.DOUBLE)
     val stringType = SimpleType(SimpleType.STRING)
-    val byteType = SimpleType(SimpleType.BYTE)
+    val byteType = SimpleType(SimpleType.BASE64)
+    val binaryType = SimpleType(SimpleType.BYTE)
     val booleanType = SimpleType(SimpleType.BOOLEAN)
     val dateType = SimpleType(SimpleType.DATE)
     val dateTimeType = SimpleType(SimpleType.DATE_TIME)
     val passwordType = SimpleType(SimpleType.STRING)
+    val fileType = SimpleType(SimpleType.BASE64_BINARY)
 
     val pendingComplexTypes = mutableListOf<String>()
 
-    fun getType(property: Property): Type {
+    fun getType(property: Property, key: String = ""): Type {
         return when (property) {
             is io.swagger.models.properties.ArrayProperty -> {
-                val arrayType = getType(property.items)
+                val arrayType = getType(property.items, "$key.items")
                 ArrayType(arrayType)
             }
             is io.swagger.models.properties.ObjectProperty -> {
                 val attributes = mutableListOf<Attribute>()
                 property.properties?.forEach { property ->
-                    val type = getType(property.value)
+                    val type = getType(property.value, property.key)
                     val atribute = Attribute(property.key, type)
                     attributes.add(atribute)
                 }
@@ -49,7 +48,7 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
             }
             is io.swagger.models.properties.MapProperty -> {
                 val addittionalProperties = property.additionalProperties
-                val additionalPropertyType = getType(addittionalProperties)
+                val additionalPropertyType = getType(addittionalProperties, "$key.additionalProperties")
                 val atribute = Attribute(addittionalProperties.title, additionalPropertyType)
                 ComplexType(property.name, ArrayList(listOf(atribute)))
             }
@@ -57,37 +56,38 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
                 val schemaName = property.simpleRef
                 getComplexType(schemaName)
             }
-            else -> {
-                getSimpleType(property.type, property.format)
-            }
+            is UntypedProperty -> throw IllegalArgumentException("Property '$key' MUST define a 'type'")
+            else -> getSimpleType(property.type, property.format)
         }
     }
 
     fun getSimpleType(type: String, format: String?, schema: ModelImpl? = null, properties: Property? = null): Type {
         return when (type) {
-            "integer" -> {
-                if (format == "int32")
-                    integerType
-                else
-                    longType
-            }
-            "number" -> {
-                if (format == "float")
-                    floatType
-                else
-                    doubleType
-            }
-            "string" -> stringType
-        // TODO: FIX OTHER TYPES
-            "byte" -> byteType
+            "integer" ->
+                when (format) {
+                    "int64" -> longType
+                    else -> integerType
+                }
+            "number" ->
+                when (format) {
+                    "double" -> doubleType
+                    else -> floatType
+                }
             "boolean" -> booleanType
-            "date" -> dateType
-            "date-time" -> dateTimeType
-            "password" -> passwordType
+            "string" ->
+                when (format) {
+                    "byte" -> byteType
+                    "binary" -> binaryType
+                    "date" -> dateType
+                    "date-time" -> dateTimeType
+                    "password" -> passwordType
+                    else -> stringType
+                }
+            "file" -> fileType
             "object" -> {
                 val attributes = mutableListOf<Attribute>()
                 schema?.properties?.forEach { property ->
-                    val type = getType(property.value)
+                    val type = getType(property.value, property.key)
                     val atribute = Attribute(property.key, type)
                     attributes.add(atribute)
                 }
@@ -97,9 +97,7 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
                 val arrayType = getType(properties!!)
                 ArrayType(arrayType)
             }
-            else -> {
-                throw IllegalArgumentException("Simple Type '${type}' not found")
-            }
+            else -> throw IllegalArgumentException("Type '${type}' is not supported")
         }
     }
 
@@ -112,12 +110,12 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
         val attributes = mutableListOf<Attribute>()
         val schemaDef = this.api!!.definitions[name]!!
         schemaDef.properties?.forEach { property ->
-            val type = getType(property.value)
+            val type = getType(property.value, property.key)
             val atribute = Attribute(property.key, type)
             attributes.add(atribute)
         }
         if (schemaDef is ModelImpl && schemaDef.additionalProperties != null) {
-            val type = getType(schemaDef.additionalProperties)
+            val type = getType(schemaDef.additionalProperties, "$name.additionalProperties")
             val atribute = Attribute(schemaDef.additionalProperties.title, type)
             attributes.add(atribute)
         }
@@ -125,17 +123,19 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
         return ComplexType(name, attributes as ArrayList<Attribute>?)
     }
 
-    fun getParameterType(schema: Model?): Type? {
+    fun getParameterType(schema: Model?, key: String): Type? {
         return when (schema) {
             is RefModel -> {
                 val schemaName = schema.simpleRef
                 getComplexType(schemaName)
             }
             is ArrayModel -> {
-                val arrayType = getType(schema.items)
+                val arrayType = getType(schema.items, "$key.items")
                 ArrayType(arrayType)
             }
             is ModelImpl -> {
+                if (schema.type == null)
+                    throw IllegalArgumentException("Schema Type must not be null in '$key'")
                 getSimpleType(schema.type, schema.format, schema)
             }
             null -> null
@@ -146,19 +146,16 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
         }
     }
 
-    fun getOperation(operation: Operation): edu.giisco.SoaML.metamodel.Operation {
+    fun getOperation(operation: Operation, path: String): edu.giisco.SoaML.metamodel.Operation {
         val parameters = mutableListOf<Parameter>()
         operation.parameters.forEach { parameter ->
             val type = when (parameter) {
                 is HeaderParameter -> getSimpleType(parameter.type, parameter.format, properties = parameter.items)
                 is QueryParameter -> getSimpleType(parameter.type, parameter.format, properties = parameter.items)
                 is PathParameter -> getSimpleType(parameter.type, parameter.format, properties = parameter.items)
-                is BodyParameter -> {
-                    getParameterType(parameter.schema)
-                }
-                else -> {
-                    stringType
-                }
+                is BodyParameter ->
+                    getParameterType(parameter.schema, "${operation.operationId ?: path}.${parameter.name}")
+                else -> stringType
             }
             val apiParameter = Parameter(parameter.name, type)
             parameters.add(apiParameter)
@@ -169,7 +166,7 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
         val faults = mutableListOf<Fault>()
         operation.responses.forEach { response ->
             val responseSchema = response.value.responseSchema
-            val type: Type? = getParameterType(responseSchema)
+            val type: Type? = getParameterType(responseSchema, "Response: ${response.key}")
             if (response.key.startsWith("2")) {
                 parameters.clear()
                 if (type != null) {
@@ -193,12 +190,16 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
         this.api = swagger
         val operations = mutableListOf<edu.giisco.SoaML.metamodel.Operation>()
         swagger.paths.forEach { path ->
-            val pathValues =
-                listOf<Operation?>(path.value.get, path.value.post, path.value.put, path.value.delete, path.value.patch)
-            for (method in pathValues) {
-                val operation = method?.let { getOperation(it) }
-                if (operation != null)
-                    operations.add(operation)
+            val pathValues = listOf(
+                Pair(path.value.get, "GET"),
+                Pair(path.value.post, "POST"),
+                Pair(path.value.put, "PUT"),
+                Pair(path.value.delete, "DELETE"),
+                Pair(path.value.patch, "PATCH")
+            )
+            pathValues.filter { it.first != null }.forEach { (pathValue, key) ->
+                val operation = getOperation(pathValue, "${path.key}.$key")
+                operations.add(operation)
             }
         }
         return Interface(swagger.info.title, ArrayList(operations))
@@ -216,7 +217,7 @@ fun main(args: Array<String>) {
     File(jsonPath).walk().filter { it.extension == "json" }.forEach { file ->
         try {
             index++
-            println("${failed.size} of ${index} failed. Now processing ${file.absolutePath}")
+            println("${failedCount} of ${index} failed. Now processing ${file.absolutePath}")
             val swaggerToSoaML = SwaggerToSoaML(file.absolutePath)
             val swaggerInterface = swaggerToSoaML.getInterface()
             interfaces.add(swaggerInterface)
@@ -224,6 +225,10 @@ fun main(args: Array<String>) {
             var message = e.toString()
             if ("java.lang.IllegalArgumentException: Cyclic reference" in message)
                 message = "java.lang.IllegalArgumentException: Cyclic reference"
+            if ("MUST define a 'type'" in message)
+                message = "java.lang.IllegalArgumentException: Property MUST define a 'type'"
+            if ("java.lang.IllegalArgumentException: Schema Type must not be null" in message)
+                message = "java.lang.IllegalArgumentException: Schema Type must not be null"
             failed.add(message)
             failedCount++
             println(e)
