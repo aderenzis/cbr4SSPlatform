@@ -76,7 +76,7 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
             "boolean" -> booleanType
             "string" ->
                 when (format) {
-                    "byte" -> byteType
+                    "byte", "base64" -> byteType
                     "binary" -> binaryType
                     "date" -> dateType
                     "date-time" -> dateTimeType
@@ -166,7 +166,7 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
         val faults = mutableListOf<Fault>()
         operation.responses.forEach { response ->
             val responseSchema = response.value.responseSchema
-            val type: Type? = getParameterType(responseSchema, "Response: ${response.key}")
+            val type: Type? = getParameterType(responseSchema, "${operation.operationId ?: path} - Response: ${response.key}")
             if (response.key.startsWith("2")) {
                 parameters.clear()
                 if (type != null) {
@@ -214,7 +214,8 @@ fun main(args: Array<String>) {
     var failed = mutableSetOf<String>()
     var failedCount = 0
     var index = 0
-    File(jsonPath).walk().filter { it.extension == "json" }.forEach { file ->
+    // TODO: parametros opcionales?
+    File(jsonPath).walk().filter { it.extension == "json" || it.extension == "yaml" }.forEach { file ->
         try {
             index++
             println("${failedCount} of ${index} failed. Now processing ${file.absolutePath}")
