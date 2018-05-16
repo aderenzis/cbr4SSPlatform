@@ -1,6 +1,7 @@
 package cbr
 
 import com.mongodb.client.MongoCollection
+import com.mongodb.client.MongoDatabase
 import compatibilityUtils.InterfacesCompatibilityChecker
 import edu.giisco.SoaML.metamodel.*
 import edu.uncoma.fai.WsdlToSoaML.parser.WsdlToSoaML
@@ -62,11 +63,19 @@ fun main(args: Array<String>) {
     val path = args[0]
     val cases = getSampleCases(path)
     val caseCollection = getCaseCollection()
+    // TODO: DB distinta para las queries, y buscar soluciones a partir de ellas
+//    <TODO: separar el swaggerToSoaml
     caseCollection.drop()
     caseCollection.insertMany(cases)
     println("Insert succefull now there are ${caseCollection.count()} Cases in the KB")
-    val currencyCase = createExampleCase()
-    val example = caseCollection.findOne() ?: currencyCase
+    val queryCollection = getQueryCollection()
+    val insertQueries = false
+    if (insertQueries) {
+        queryCollection.drop()
+        val currencyCase = createExampleCase()
+        queryCollection.insertOne(caseCollection.findOne() ?: currencyCase)
+    }
+    val example = queryCollection.findOne()!!
     val solution = findSolution(example)
     println("\nThe similar case is:")
     println(solution)
@@ -117,10 +126,21 @@ fun createExampleCase(): Case {
     return case1
 }
 
-fun getCaseCollection(): MongoCollection<Case> {
+fun getDatabase(name: String): MongoDatabase {
     println("Connecting to Mongo")
     val client = KMongo.createClient("172.17.0.2")
-    val database = client.getDatabase("test")
+    return client.getDatabase(name)
+}
+
+fun getCaseCollection(): MongoCollection<Case> {
+    val database = getDatabase("kb")
+    val caseCollection = database.getCollection<Case>()
+    println("Connection with Mongo established.")
+    return caseCollection
+}
+
+fun getQueryCollection(): MongoCollection<Case> {
+    val database = getDatabase("queries")
     val caseCollection = database.getCollection<Case>()
     println("Connection with Mongo established.")
     return caseCollection

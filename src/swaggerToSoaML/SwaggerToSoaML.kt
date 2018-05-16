@@ -181,7 +181,8 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
             }
 
         }
-        val soaMLOperation = edu.giisco.SoaML.metamodel.Operation("das", input, output, ArrayList(faults), apiResponse)
+//        TODO: NOMBRE DE LA OPERACION,
+        val soaMLOperation = edu.giisco.SoaML.metamodel.Operation(path, input, output, ArrayList(faults), apiResponse)
         return soaMLOperation
     }
 
@@ -198,7 +199,7 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
                 Pair(path.value.patch, "PATCH")
             )
             pathValues.filter { it.first != null }.forEach { (pathValue, key) ->
-                val operation = getOperation(pathValue, "${path.key}.$key")
+                val operation = getOperation(pathValue, "${key}_${path.key}")
                 operations.add(operation)
             }
         }
@@ -206,10 +207,7 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
     }
 }
 
-
-fun main(args: Array<String>) {
-    //    Pasar como argumento el path hacia los servicios
-    val jsonPath = args[0]
+fun getInterfaces(jsonPath:String):ArrayList<Interface>{
     val interfaces = mutableListOf<Interface>()
     var failed = mutableSetOf<String>()
     var failedCount = 0
@@ -237,4 +235,11 @@ fun main(args: Array<String>) {
     }
     println("${index - failedCount} of ${index} Interfaces Created, ${failedCount} failed")
     println(failed)
+    return ArrayList(interfaces)
+}
+
+fun main(args: Array<String>) {
+    //    Pasar como argumento el path hacia los servicios
+    val jsonPath = args[0]
+    getInterfaces(jsonPath)
 }
