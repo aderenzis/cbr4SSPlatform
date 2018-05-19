@@ -43,6 +43,9 @@ fun findSimilarity(referenceCase: Case, k: Int): List<Case> {
             casesByDistance.add(Pair(distance, it))
     }
     val top = minOf(k, casesByDistance.size)
+    println()
+    println("Distance: ${casesByDistance.sortedWith(compareBy({ it.first })).first().first}")
+    println("Distance of the next: ${casesByDistance.sortedWith(compareBy({ it.first }))[1].first}")
     return casesByDistance.sortedWith(compareBy({ it.first })).slice(0 until top).map { it.second }
 }
 
