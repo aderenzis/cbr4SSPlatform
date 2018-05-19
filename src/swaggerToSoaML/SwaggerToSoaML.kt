@@ -181,7 +181,7 @@ class SwaggerToSoaML(val path: String, private var api: Swagger? = null) {
             }
 
         }
-//        TODO: NOMBRE DE LA OPERACION,
+
         val soaMLOperation = edu.giisco.SoaML.metamodel.Operation(path, input, output, ArrayList(faults), apiResponse)
         return soaMLOperation
     }

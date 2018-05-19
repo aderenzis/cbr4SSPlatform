@@ -72,11 +72,13 @@ fun main(args: Array<String>) {
     caseCollection.insertMany(cases)
     println("Insert succefull now there are ${caseCollection.count()} Cases in the KB")
     val queryCollection = getQueryCollection()
-    val insertQueries = false
-    if (insertQueries) {
-        queryCollection.drop()
-        val currencyCase = createExampleCase()
-        queryCollection.insertOne(caseCollection.findOne() ?: currencyCase)
+    if (args.size >1){
+        val insertQueries = args[1] == "true"
+        if (insertQueries) {
+            queryCollection.drop()
+            val currencyCase = createExampleCase()
+            queryCollection.insertOne(caseCollection.findOne() ?: currencyCase)
+        }
     }
     val example = queryCollection.findOne()!!
     val solution = findSolution(example)
