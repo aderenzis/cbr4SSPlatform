@@ -22,6 +22,8 @@ data class Case(val problem: Interface, var solution: String = "") {
     }
 }
 
+//clase RetievedCases con problema(interfaz), y lista de (tupla, Cases), se guarda en  timestamp de ejecucion del experimento
+
 fun getSampleCases(path: String): MutableList<Case> {
     val cases = mutableListOf<Case>()
     File(path).walk().filter { it.extension == "wsdl2" }.forEach {
@@ -45,7 +47,7 @@ fun findSimilarity(referenceCase: Case, k: Int): List<Case> {
     val top = minOf(k, casesByDistance.size)
     println()
     println("Distance: ${casesByDistance.sortedWith(compareBy({ it.first })).first().first}")
-    println("Distance of the next: ${casesByDistance.sortedWith(compareBy({ it.first }))[1].first}")
+    println("Distance of the next (${casesByDistance.sortedWith(compareBy({ it.first }))[1].second.solution}): ${casesByDistance.sortedWith(compareBy({ it.first }))[1].first}")
     return casesByDistance.sortedWith(compareBy({ it.first })).slice(0 until top).map { it.second }
 }
 
@@ -66,8 +68,6 @@ fun main(args: Array<String>) {
     val path = args[0]
     val cases = getSampleCases(path)
     val caseCollection = getCaseCollection()
-    // TODO: DB distinta para las queries, y buscar soluciones a partir de ellas
-//    <TODO: separar el swaggerToSoaml
     caseCollection.drop()
     caseCollection.insertMany(cases)
     println("Insert succefull now there are ${caseCollection.count()} Cases in the KB")
@@ -81,6 +81,7 @@ fun main(args: Array<String>) {
         }
     }
     val example = queryCollection.findOne()!!
+//    Iterar por cada coleccion de query
     val solution = findSolution(example)
     println("\nThe similar case is:")
     println(solution)
