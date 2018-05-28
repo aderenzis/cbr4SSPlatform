@@ -17,8 +17,27 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
-
+  <repositories>
+    <repository>
+      <id>SoaMLparsers-mvn-repo</id>
+      <url>https://raw.github.com/rapkyt/SoaMLparsers/mvn-repo/</url>
+      <snapshots>
+          <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+      </snapshots>
+    </repository>
+  </repositories>
   <dependencies>
+      <dependency>
+          <groupId>com.github.rapkyt</groupId>
+          <artifactId>SoaMLparsers</artifactId>
+          <version>1.0</version>
+      </dependency>
+      <dependency>
+          <groupId>io.github.cdimascio</groupId>
+          <artifactId>java-dotenv</artifactId>
+          <version>3.0.0</version>
+      </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-stdlib</artifactId>
