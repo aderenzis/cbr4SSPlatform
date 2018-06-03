@@ -23,6 +23,11 @@ DATABASE_PORT: Port of the Database (default 27017)
 DATABASE_KB_NAME: Name of the knowledge base Database (default KB)
 DATABASE_QUERIES_NAME: Name of the queries Database (default queries)
 DATABASE_RESULTS_PREFIX: Prefix of the name of the results Database (default retrieved_cases)
+```
 
-DROP_DB: Choose if you want to drop the Database before the import (defualt false)
+
+#### Runtime Environment Variables
+```
+VERBOSE: Choose if you want to run it in verbose mode (default false)
+K: The number of k to use in the knn algorithm (default 10)
 ```
