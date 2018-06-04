@@ -17,11 +17,11 @@ private val dotenv = dotenv { directory = "./" }
 private val verbose = dotenv["VERBOSE"] == "true"
 
 
-data class RetrievedCase(val problem: Interface, val solutions: List<Pair<Double, Case>>)
-// TODO: Hace falta guardar la lista de Cases? con las soluciones no es suficiente?
+data class RetrievedCase(val problem: Interface, val solutions: List<Pair<Double, String>>)
 
-fun findSimilarity(referenceCase: Case, k: Int): List<Pair<Double, Case>> {
-    val casesByDistance = mutableListOf<Pair<Double, Case>>()
+
+fun findSimilarity(referenceCase: Case, k: Int): List<Pair<Double, String>> {
+    val casesByDistance = mutableListOf<Pair<Double, String>>()
     val caseCollection = getCaseCollection()
     val casesCount = caseCollection.count()
     caseCollection.find()
@@ -33,19 +33,17 @@ fun findSimilarity(referenceCase: Case, k: Int): List<Pair<Double, Case>> {
                 println("\n $index/$casesCount.Comparing to ${case.solution}")
             try {
                 val distance = referenceCase.getDistance(case)
-                casesByDistance.add(Pair(distance, case))
+                casesByDistance.add(Pair(distance, case.solution))
             } catch (e: Exception) {
                 if (verbose)
                     println("\n${case.solution} failed, exception $e.")
             }
         }
-    // TODO: se debería recortar la lista cada tanto? es decir, si tengo un elemento que ya sé que no está entre los K
-    // mejores, tiene sentido guardarlo en la lista?
     val top = minOf(k, casesByDistance.size)
     return casesByDistance.sortedWith(compareBy({ it.first })).slice(0 until top)
 }
 
-fun findSolutions(referenceCase: Case): List<Pair<Double, Case>> {
+fun findSolutions(referenceCase: Case): List<Pair<Double, String>> {
     /**
      * Find the solution to [referenceCase]
      * In order to do it, it perform a knn search and return the most common solution.
