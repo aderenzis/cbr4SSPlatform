@@ -19,6 +19,7 @@ private val verbose = dotenv["VERBOSE"] == "true"
 
 data class RetrievedCase(val problem: Interface, val solutions: List<Pair<Double, String>>)
 
+data class LearnedCase(val case: Case, val distance: Double)
 
 fun findSimilarity(referenceCase: Case, k: Int): List<Pair<Double, String>> {
     val casesByDistance = mutableListOf<Pair<Double, String>>()
@@ -54,9 +55,19 @@ fun findSolutions(referenceCase: Case): List<Pair<Double, String>> {
     return similarCases
 }
 
+fun findSolution(referenceCase: Case, solutions: List<Pair<Double, String>>): Pair<Case, Double> {
+    // TODO: Define how to get the solution
+    val solution = solutions[0]
+    referenceCase.solution = solution.second
+    return Pair(referenceCase, solution.first)
+}
+
 fun main(args: Array<String>) {
     val queryCollection = getQueryCollection()
     val (retrievedCasesCollection, retrievedCasesCollectionName) = getRetrievedCasesCollection()
+    val learnedCasesCollection = getLearnedCasesCollection()
+    val caseCollection = getCaseCollection()
+    val distanceThreshold = dotenv["DISTANCE_THRESHOLD"]?.toDouble()
     queryCollection.find().forEach {
         if (verbose) {
             println("\n-------------------------------------------------------------------------------------------------")
@@ -69,6 +80,15 @@ fun main(args: Array<String>) {
         if (verbose) {
             println("\n-------------------------------------------------------------------------------------------------")
             println("Solutions of ${it.problem.name} were found")
+        }
+        val (solutionCase, distance) = findSolution(it, solutions)
+        println("\n-------------------------------------------------------------------------------------------------")
+        println("Solutions of ${solutionCase.problem.name} is ${solutionCase.solution}, distance: $distance")
+        if (distanceThreshold != null && distance < distanceThreshold) {
+            if (verbose)
+                println("Learned a new Case!")
+            caseCollection.insertOne(solutionCase)
+            learnedCasesCollection.insertOne(LearnedCase(solutionCase, distance))
         }
     }
     println("Experiment done, see  '$retrievedCasesCollectionName'")
@@ -105,6 +125,18 @@ fun getRetrievedCasesCollection(): Pair<MongoCollection<RetrievedCase>, String> 
     if (verbose)
         println("Connection with Mongo established.")
     return Pair(caseCollection, databaseName)
+}
+
+fun getLearnedCasesCollection(): MongoCollection<LearnedCase> {
+    val databaseNamePrefix = dotenv["DATABASE_LEARNED_PREFIX"] ?: "learned"
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH:mm:ss")
+    val timestamp = LocalDateTime.now().format(formatter)
+    val databaseName = "${databaseNamePrefix}_$timestamp"
+    val database = getDatabase(databaseName)
+    val caseCollection = database.getCollection<LearnedCase>()
+    if (verbose)
+        println("Connection with Mongo established.")
+    return caseCollection
 }
 
 

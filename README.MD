@@ -23,6 +23,7 @@ DATABASE_PORT: Port of the Database (default 27017)
 DATABASE_KB_NAME: Name of the knowledge base Database (default KB)
 DATABASE_QUERIES_NAME: Name of the queries Database (default queries)
 DATABASE_RESULTS_PREFIX: Prefix of the name of the results Database (default retrieved_cases)
+DATABASE_LEARNED_PREFIX: Prefix where the learned cases will be added (besides of KB) to inspect them (default learned)
 ```
 
 
@@ -30,4 +31,5 @@ DATABASE_RESULTS_PREFIX: Prefix of the name of the results Database (default ret
 ```
 VERBOSE: Choose if you want to run it in verbose mode (default false)
 K: The number of k to use in the knn algorithm (default 10)
+DISTANCE_THRESHOLD: Threshold distance value to retrain the CBR (when is not present, the CBR does not learn) 
 ```
