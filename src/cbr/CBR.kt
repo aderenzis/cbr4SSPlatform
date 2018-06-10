@@ -9,6 +9,8 @@ import org.litote.kmongo.MongoOperator
 import org.litote.kmongo.filter
 import org.litote.kmongo.getCollection
 import schemas.Case
+import selection.K
+import selection.findSolution
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -50,16 +52,8 @@ fun findSolutions(referenceCase: Case): List<Pair<Double, String>> {
      * In order to do it, it perform a knn search and return the most common solution.
      * @return the proper solution
      */
-    val k = dotenv["K"]?.toInt() ?: 10
-    val similarCases = findSimilarity(referenceCase, k)
+    val similarCases = findSimilarity(referenceCase, K)
     return similarCases
-}
-
-fun findSolution(referenceCase: Case, solutions: List<Pair<Double, String>>): Pair<Case, Double> {
-    // TODO: Define how to get the solution
-    val solution = solutions[0]
-    referenceCase.solution = solution.second
-    return Pair(referenceCase, solution.first)
 }
 
 fun main(args: Array<String>) {
