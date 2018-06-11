@@ -19,7 +19,12 @@ private val dotenv = dotenv { directory = "./" }
 private val verbose = dotenv["VERBOSE"] == "true"
 
 
-data class RetrievedCase(val problem: Interface, val solutions: List<Pair<Double, String>>)
+data class RetrievedCase(
+    val problem: Interface,
+    val solutions: List<Pair<Double, String>>,
+    val selectedSolution: Pair<Double, String>,
+    val hasLearned: Boolean
+)
 
 data class LearnedCase(val case: Case, val distance: Double)
 
@@ -68,8 +73,6 @@ fun main(args: Array<String>) {
             println("Searching for solutions of ${it.problem.name}")
         }
         val solutions = findSolutions(it)
-        val retrievedCase = RetrievedCase(it.problem, solutions)
-        retrievedCasesCollection.insertOne(retrievedCase)
 
         if (verbose) {
             println("\n-------------------------------------------------------------------------------------------------")
@@ -77,13 +80,18 @@ fun main(args: Array<String>) {
         }
         val (solutionCase, distance) = findSolution(it, solutions)
         println("\n-------------------------------------------------------------------------------------------------")
-        println("Solutions of ${solutionCase.problem.name} is ${solutionCase.solution}, distance: $distance")
-        if (distanceThreshold != null && distance < distanceThreshold) {
+        println("Solutions of ${it.problem.name} is ${solutionCase.solution}, distance: $distance")
+
+        val learned = distanceThreshold != null && distance < distanceThreshold
+        if (learned) {
             if (verbose)
                 println("Learned a new Case!")
             caseCollection.insertOne(solutionCase)
             learnedCasesCollection.insertOne(LearnedCase(solutionCase, distance))
         }
+
+        val retrievedCase = RetrievedCase(it.problem, solutions, Pair(distance, it.problem.name), learned)
+        retrievedCasesCollection.insertOne(retrievedCase)
     }
     println("Experiment done, see  '$retrievedCasesCollectionName'")
 }
@@ -142,4 +150,3 @@ fun getCaseCollection(): MongoCollection<Case> {
         println("Connection with Mongo established.")
     return caseCollection
 }
-
