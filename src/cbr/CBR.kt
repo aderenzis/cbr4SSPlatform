@@ -41,14 +41,18 @@ fun findSimilarity(referenceCase: Case, k: Int): List<Pair<Double, String>> {
                 println("\n $index/$casesCount.Comparing to ${case.solution}")
             try {
                 val distance = referenceCase.getDistance(case)
-                casesByDistance.add(Pair(distance, case.solution))
+                if (index < k || distance < casesByDistance.last().first) {
+                    casesByDistance.add(Pair(distance, case.solution))
+                    casesByDistance.sortWith(compareBy({ it.first }))
+                    if (index >= k)
+                        casesByDistance.removeAt(k)
+                }
             } catch (e: Exception) {
                 if (verbose)
                     println("\n${case.solution} failed, exception $e.")
             }
         }
-    val top = minOf(k, casesByDistance.size)
-    return casesByDistance.sortedWith(compareBy({ it.first })).slice(0 until top)
+    return casesByDistance
 }
 
 fun findSolutions(referenceCase: Case): List<Pair<Double, String>> {
