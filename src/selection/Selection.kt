@@ -66,18 +66,13 @@ fun findSolution(referenceCase: Case, solutions: List<Pair<Double, String>>): Pa
 
 fun main(args: Array<String>) {
     val solutions = arrayListOf(
-        Pair(0.0, "IntuneResourceManagementClient - azure.com-arm-intune-2015-01-14-preview-swagger.json"),
-        Pair(0.0805185185185187, "ExaVault - exavault.com-1.0.0-swagger.json"),
-        Pair(0.08076719576719, "IntuneResourceManagementClient - azure.com-arm-intune-2015-01-14-preview-swagger.json"),
-        Pair(0.08129629629629632, "ExaVault - exavault.com-1.0.0-swagger.json"),
-        Pair(0.838099128540305, "iotHubClient - azure.com-arm-iothub-2016-02-03-swagger.json"),
-        Pair(0.893915343915344, "Google Identity Toolkit - googleapis.com-identitytoolkit-v3-swagger.json"),
-        Pair(0.8977160493827162, "AWS OpsWorks - amazonaws.com-opsworks-2013-02-18-swagger.json"),
-        Pair(0.8979276895943564, "AWS Identity and Access Management - amazonaws.com-iam-2010-05-08-swagger.json"),
-        Pair(0.8993386243386244, "Google Analytics - googleapis.com-analytics-v3-swagger.json"),
-        Pair(0.8998611111111112, "BC Data Catalogue - gov.bc.ca-bcdc-3.0.1-swagger.json")
+        Pair(0.1533, "PetStoreFull"),
+        Pair(0.8365, "ClickMeter"),
+        Pair(0.985, "MoneyTransfer"),
+        Pair(1.53, "MoneyTransfer")
     )
     val case = getCaseCollection().findOne()!!
-    val knn = findSolution(case, solutions)
+    val top = minOf(K, solutions.size)
+    val knn = findSolution(case, solutions.slice(0 until top))
     println("KNN: $knn")
 }
