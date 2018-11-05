@@ -72,30 +72,42 @@ fun main(args: Array<String>) {
     val caseCollection = getCaseCollection()
     val distanceThreshold = dotenv["DISTANCE_THRESHOLD"]?.toDouble()
     queryCollection.find().forEach {
-        if (verbose) {
-            println("\n-------------------------------------------------------------------------------------------------")
-            println("Searching for solutions of ${it.problem.name}")
-        }
-        val solutions = findSolutions(it)
+        try {
+            if (verbose) {
+                println("\n-------------------------------------------------------------------------------------------------")
+                println("Searching for solutions of ${it.problem.name}")
+            }
+            val solutions = findSolutions(it)
 
-        if (verbose) {
-            println("\n-------------------------------------------------------------------------------------------------")
-            println("Solutions of ${it.problem.name} were found")
-        }
-        val (solutionCase, distance) = findSolution(it, solutions)
-        println("\n-------------------------------------------------------------------------------------------------")
-        println("Solutions of ${it.problem.name} is ${solutionCase.solution}, distance: $distance")
+            if (solutions.isEmpty()) {
+                if (verbose) {
+                    println("\n-------------------------------------------------------------------------------------------------")
+                    println("No Solutions of ${it.problem.name} were found")
+                }
+            } else {
+                if (verbose) {
+                    println("\n-------------------------------------------------------------------------------------------------")
+                    println("Solutions of ${it.problem.name} were found")
+                }
+                val (solutionCase, distance) = findSolution(it, solutions)
+                println("\n-------------------------------------------------------------------------------------------------")
+                println("Solutions of ${it.problem.name} is ${solutionCase.solution}, distance: $distance")
 
-        val learned = distanceThreshold != null && distance < distanceThreshold
-        if (learned) {
+                val learned = distanceThreshold != null && distance < distanceThreshold
+                if (learned) {
+                    if (verbose)
+                        println("Learned a new Case!")
+                    caseCollection.insertOne(solutionCase)
+                    learnedCasesCollection.insertOne(LearnedCase(solutionCase, distance))
+                }
+
+                val retrievedCase = RetrievedCase(it.problem, solutions, Pair(distance, it.problem.name), learned)
+                retrievedCasesCollection.insertOne(retrievedCase)
+            }
+        } catch (e: Exception) {
             if (verbose)
-                println("Learned a new Case!")
-            caseCollection.insertOne(solutionCase)
-            learnedCasesCollection.insertOne(LearnedCase(solutionCase, distance))
+                println("\n${it.problem.name} failed, exception $e.")
         }
-
-        val retrievedCase = RetrievedCase(it.problem, solutions, Pair(distance, it.problem.name), learned)
-        retrievedCasesCollection.insertOne(retrievedCase)
     }
     println("Experiment done, see  '$retrievedCasesCollectionName'")
 }
@@ -125,7 +137,7 @@ fun getRetrievedCasesCollection(): Pair<MongoCollection<RetrievedCase>, String> 
     val databaseNamePrefix = dotenv["DATABASE_RESULTS_PREFIX"] ?: "retrieved_cases"
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH:mm:ss")
     val timestamp = LocalDateTime.now().format(formatter)
-    val databaseName = "${databaseNamePrefix}_$timestamp"
+    val databaseName = dotenv["DATABASE_RESULTS_NAME"] ?: "${databaseNamePrefix}_$timestamp"
     val database = getDatabase(databaseName)
     val caseCollection = database.getCollection<RetrievedCase>()
     if (verbose)

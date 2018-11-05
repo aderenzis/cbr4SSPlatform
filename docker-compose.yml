@@ -1,0 +1,17 @@
+version: '3'
+services:
+  cbr:
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      - mongo
+    environment:
+      - WNHOME=/app/WordNet
+    command: /app/run_experiment.sh
+  mongo:
+    image: mongo
+    ports:
+      - 27018:27017
+    command: mongod --logpath=/dev/null # --quiet
+
