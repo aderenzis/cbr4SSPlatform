@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter
 
 private val dotenv = dotenv { directory = "./" }
 private val verbose = dotenv["VERBOSE"] == "true"
+private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH:mm:ss")
 
 
 data class RetrievedCase(
@@ -24,7 +25,9 @@ data class RetrievedCase(
     val solutions: List<Pair<Double, String>>,
     val selectedSolution: Pair<Double, String>,
     val hasLearned: Boolean
-)
+) {
+    val created get() = LocalDateTime.now().format(dateFormatter)
+}
 
 data class LearnedCase(val case: Case, val distance: Double)
 
@@ -101,7 +104,7 @@ fun main(args: Array<String>) {
                     learnedCasesCollection.insertOne(LearnedCase(solutionCase, distance))
                 }
 
-                val retrievedCase = RetrievedCase(it.problem, solutions, Pair(distance, it.problem.name), learned)
+                val retrievedCase = RetrievedCase(it.problem, solutions, Pair(distance, solutionCase.solution), learned)
                 retrievedCasesCollection.insertOne(retrievedCase)
             }
         } catch (e: Exception) {
@@ -135,8 +138,7 @@ fun getQueryCollection(): MongoCollection<Case> {
 
 fun getRetrievedCasesCollection(): Pair<MongoCollection<RetrievedCase>, String> {
     val databaseNamePrefix = dotenv["DATABASE_RESULTS_PREFIX"] ?: "retrieved_cases"
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH:mm:ss")
-    val timestamp = LocalDateTime.now().format(formatter)
+    val timestamp = LocalDateTime.now().format(dateFormatter)
     val databaseName = dotenv["DATABASE_RESULTS_NAME"] ?: "${databaseNamePrefix}_$timestamp"
     val database = getDatabase(databaseName)
     val caseCollection = database.getCollection<RetrievedCase>()
