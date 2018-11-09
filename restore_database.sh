@@ -8,6 +8,8 @@ docker-compose run --rm -v "$PWD"/KB:/backup mongo sh -c 'mongorestore /backup -
 
 kill $MONGO_PID
 
+sleep 1
 
 echo "Done"
+echo ""
 

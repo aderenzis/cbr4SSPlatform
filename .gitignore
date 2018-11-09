@@ -29,4 +29,9 @@ hs_err_pid*
 log/
 target/
 
+# Hackathon
+mutated/
+KB/
+WordNet/
+RESULTS/
 .env

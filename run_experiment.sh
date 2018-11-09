@@ -9,7 +9,7 @@ echo "Starting CBR"
 
 sleep 5
 
-/usr/lib/jvm/java-8-openjdk-amd64/bin/java -jar /app/jars/cbr4SSPlatform.jar
+/usr/lib/jvm/java-8-openjdk-amd64/bin/java -Xmx2g -jar /app/jars/cbr4SSPlatform.jar
 
-echo "dump"
+echo "Done"
 
