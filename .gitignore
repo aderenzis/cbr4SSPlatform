@@ -30,7 +30,7 @@ log/
 target/
 
 # Hackathon
-mutated/
+json/
 KB/
 WordNet/
 RESULTS/
