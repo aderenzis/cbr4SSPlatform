@@ -4,7 +4,6 @@
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.ear
 bin
@@ -29,3 +28,10 @@ hs_err_pid*
 # Maven
 log/
 target/
+
+# Hackathon
+json/
+KB/
+WordNet/
+RESULTS/
+.env
