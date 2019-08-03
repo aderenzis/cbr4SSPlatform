@@ -32,6 +32,8 @@ target/
 # Hackathon
 json/
 KB/
-WordNet/
+WordNet/*
 RESULTS/
 .env
+
+!/WordNet/.gitkeep

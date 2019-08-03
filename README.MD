@@ -35,6 +35,11 @@ SELECTION_RULE: The selection algorithm rule, one of KNN, WKNN and DWKNN (defaul
 DISTANCE_THRESHOLD: Threshold distance value to retrain the CBR (when is not present, the CBR does not learn) 
 ```
 
+#### SOAML parser settings:
+
+[See](https://github.com/rapkyt/SoaMLparsers/blob/master/README.md) 
+
+
 ## Selections Rules
 
 ### KNN
@@ -57,3 +62,38 @@ with closer neighbors having greater weights. Nevertheless, different from the w
 nearest neighbor xNNi of the query x a dual weight wi, defined by the dual distance-weighted function as below:
 
 TODO: insert math formula
+
+
+## Running
+We provide a way to run experiments with a docker environment, to ensure the quality of the experiments, i.e. all are 
+run in the same environment, regardless of who run it. And also to make it easyer to new ones getting into it.
+
+
+### Setup Docker
+In order to be ready to parse specifications into cases, or run the Case Based Reasoning you should run in a console:
+```bash
+$ docker-compose build
+$ cp docker.env .env
+```
+
+This will install all required dependencies and let you with a pre-configured .env file for you to start with it.
+
+All that remains is to do is:
+- Get a list of stopwords separated by a newline character, and saves them into `WordNet/stoplist.txt`
+- Get the dict of WordNet and save it into `WordNet/dict`.
+
+
+### Parsing specifications into cases and saves them into a Collection
+If you want to load specifications (OAS or WSDL) into a collection you must set the required SoaMLParsers' settings in 
+.env and run `./load_cases.sh`.
+
+This will iterate over the files defined in `OAS_PATH` and `WSDL_PATH`, parsing specifications and saving them into  the
+collection defined in `DATABASE_NAME`.
+
+
+### Running Case Based Reasoning
+If you want to run the CBR you must set described settings in *Variables* and run `docker-compose up` in a console.
+
+
+### Exporting the results
+To get a nice .json file with the result of the experiments you should run `./export_results.sh` in a console.

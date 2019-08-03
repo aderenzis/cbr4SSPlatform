@@ -1,9 +1,7 @@
 #!/bin/bash -e
 echo "Starting experiment"
 
-sleep 5
-
-/usr/lib/jvm/java-8-openjdk-amd64/bin/java -jar /app/jars/SoaMLparsers.jar |& tee /app/SoaMLParsers.log
+./load_cases.sh
 
 echo "Starting CBR"
 
